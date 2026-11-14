@@ -78,8 +78,9 @@ async def upload_movies(file: UploadFile = File(...)):
 
     # TODO 3: save and return
     storage.save(df)
-    logger.info(f"Uploaded movies: filename={file.filename}, rows={len(df)}")
     cache.invalidate()
+    logger.info(f"Uploaded movies: filename={file.filename}, rows={len(df)}")
+
     return {
         "filename": file.filename,
         "rows": len(df),
@@ -102,6 +103,7 @@ def get_movies(limit: int = Query(default=100, ge=1)):
     logger.info(f"Retrieved movies: returned_rows={len(data)}")
     return response
 
+
 @app.get("/movies/search", response_model=list[dict])
 def query_movies(
     columns: list[str] = Query(default=["title"]),
@@ -114,11 +116,9 @@ def query_movies(
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
-    logger.info(
-        "Queried movies: columns=%s, min_rating=%s, returned_rows=%d",
-        columns, min_rating, len(results),
-    )
+    logger.info(f"Queried movies: columns={columns}, min_rating={min_rating}, returned_rows={len(results)}")
     return results
+
 
 @app.post("/movies/process", response_model=MovieProcessingReport)
 def process_movies(config: ProcessConfig):
@@ -159,6 +159,7 @@ def process_movies(config: ProcessConfig):
 
     # TODO 3: save and return
     storage.save(processed)
+    cache.invalidate()
     logger.info(
         f"Processed movies: validation_removed={validation_removed}, rows_before={report["rows_before"]}, rows_after={report["rows_after"]}"
     )
@@ -167,4 +168,3 @@ def process_movies(config: ProcessConfig):
         "validation_rows_removed": validation_removed,
         "cleaning_report": report,
     }
-    cache.invalidate()
