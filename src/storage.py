@@ -20,11 +20,9 @@ class MovieStorage:
         # DELETE the old rows, then INSERT all rows from df.
         # Commit only after all inserts succeed; roll back on SQLite errors.
         # Close the connection in finally. Log the saved row count at DEBUG.
-        df = df.reindex(columns=MOVIE_COLUMNS)
-        rows = [
-            tuple(_to_sql_value(value) for value in row)
-            for row in df.itertuples(index=False, name=None)
-        ]
+        df = df[MOVIE_COLUMNS].astype(object)
+        df = df.where(pd.notna(df), None)
+        rows = list(df.itertuples(index=False, name=None))
 
         connection = get_connection(self.db_path)
         try:

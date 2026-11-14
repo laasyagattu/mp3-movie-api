@@ -1,47 +1,40 @@
-def test_upload_csv(client, sample_csv_bytes):
-    # TODO: Upload the sample CSV to POST /upload.
-    # Assert status 200, six rows, two columns,
-    # and a positive integer dataset ID.
-    response = client.post("/upload", files={"file": ("sample_data.csv", sample_csv_bytes, "text/csv")})
-    assert response.status_code == 200
-    body = response.json()
-    assert body["rows"] == 6
-    assert body["columns"] == 2
-    assert isinstance(body["id"], int)
-    assert body["id"] > 0
-
-
-def test_process_and_retrieve(
-    client, uploaded_dataset_id, processing_body
-):
-    # TODO 1: Send a POST request to
-    # /datasets/{uploaded_dataset_id}/process
-    # using json=processing_body.
-    # Assert status 200, one validation removal,
-    # and a cleaning report showing 5 → 3 rows.
+def test_upload_movies(client, sample_csv_bytes):
     response = client.post(
-        f"/datasets/{uploaded_dataset_id}/process",
-        json=processing_body
+        "/upload",
+        files={"file": ("sample_movies.csv", sample_csv_bytes, "text/csv")}
     )
     assert response.status_code == 200
-    body = response.json()
-    assert body["validation_rows_removed"] == 1
-    assert body["cleaning_report"]["rows_before"] == 5
-    assert body["cleaning_report"]["rows_after"] == 3
+    assert response.json() == {
+        "filename": "sample_movies.csv",
+        "rows": 20,
+        "columns": 4,
+        "column_names": ["title", "release_year", "rating", "genre"],
+    }
 
 
-    # TODO 2: GET /datasets/{uploaded_dataset_id}.
-    # Assert status 200 and total_rows == 3.
-    # Check that the returned records contain student IDs
-    # 1, 2, and 5 with scores 80, 90, and 85.
-    response = client.get(f"/datasets/{uploaded_dataset_id}")
+def test_get_movies(client, uploaded_movies):
+    response = client.get("/movies", params={"limit": 2})
     assert response.status_code == 200
     body = response.json()
-    assert body["total_rows"] == 3
+    assert body["total_rows"] == 20
+    assert [record["id"] for record in body["data"]] == [1, 2]
 
 
-def test_retrieve_missing_dataset(client):
-    # TODO: Retrieve a dataset ID that does not exist.
-    # Assert status 404.
-    response = client.get("/datasets/999")
-    assert response.status_code == 404
+def test_search_movies(client, uploaded_movies):
+    response = client.get(
+        "/movies/search",
+        params={"columns": ["title", "rating"], "min_rating": 8.5, "limit": 2},
+    )
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": 4, "title": "Movie C", "rating": 9.0},
+        {"id": 2, "title": "Movie B", "rating": 8.5},
+    ]
+
+
+def test_upload_rejects_non_csv(client):
+    response = client.post(
+        "/upload", files={"file": ("movies.txt", b"hello", "text/plain")}
+    )
+    assert response.status_code == 400
+    assert client.get("/health").status_code == 200
