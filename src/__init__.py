@@ -9,3 +9,4 @@ from .models import (
     MovieUploadInfo,
     ProcessConfig,
 )
+from .cache import MovieCache
