@@ -218,3 +218,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# repo specific
+data/
+venv/
+__pycache__/
+.pytest_cache/
